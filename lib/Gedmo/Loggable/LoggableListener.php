@@ -258,13 +258,35 @@ class LoggableListener extends MappedEventSubscriber
                     }
                     $newValues[$field] = $value;
                 }
+
+                // Persist collection associations
+                foreach ($config['versioned'] as $field) {
+                    if ($meta->isCollectionValuedAssociation($field)) {
+                        $method = 'get'.ucfirst($field);
+                        $oid = spl_object_hash($object->$method());
+                        $collection = $object->$method();
+                        $entities = array();
+                        foreach ($collection as $entity) {
+                            $entities[] = array('id' => $entity->getId());
+                        }
+                        $value = $entities;
+                        if (!is_array($value) && !$value) {
+                            $this->pendingRelatedObjects[$oid][] = array(
+                                'log' => $logEntry,
+                                'field' => $field
+                            );
+                        }
+                        $newValues[$field] = $value;
+                    }
+                }
+
                 $logEntry->setData($newValues);
             }
-            
+
             if($action === self::ACTION_UPDATE && 0 === count($newValues)) {
                 return;
             }
-            
+
             $version = 1;
             if ($action !== self::ACTION_CREATE) {
                 $version = $ea->getNewVersion($logEntryMeta, $object);

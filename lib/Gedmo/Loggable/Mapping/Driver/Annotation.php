@@ -71,9 +71,6 @@ class Annotation extends AbstractAnnotationDriver
             // versioned property
             if ($versioned = $this->reader->getPropertyAnnotation($property, self::VERSIONED)) {
                 $field = $property->getName();
-                if ($meta->isCollectionValuedAssociation($field)) {
-                    throw new InvalidMappingException("Cannot versioned [{$field}] as it is collection in object - {$meta->name}");
-                }
                 // fields cannot be overrided and throws mapping exception
                 $config['versioned'][] = $field;
             }
