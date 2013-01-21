@@ -62,6 +62,16 @@ class LoggableListener extends MappedEventSubscriber
     protected $pendingRelatedObjects = array();
 
     /**
+     * For log of changed collections we use
+     * its identifiers to avoid storing serialized Proxies.
+     * These are pending relations in case it does not
+     * have an identifier yet
+     *
+     * @var array
+     */
+    protected $pendingRelatedCollections = array();
+
+    /**
      * Set username for identification
      *
      * @param mixed $username
@@ -162,6 +172,23 @@ class LoggableListener extends MappedEventSubscriber
             }
             unset($this->pendingRelatedObjects[$oid]);
         }
+        if ($this->pendingRelatedCollections && array_key_exists($oid, $this->pendingRelatedCollections)) {
+            $wrapped = AbstractWrapper::wrap($object, $om);
+            $identifiers = $wrapped->getIdentifier(false);
+            foreach ($this->pendingRelatedCollections[$oid] as $props) {
+                $logEntry = $props['log'];
+                $logEntryMeta = $om->getClassMetadata(get_class($logEntry));
+                $oldData = $data = $logEntry->getData();
+                $data[$props['field']][] = $identifiers;
+                $logEntry->setData($data);
+
+                $uow->scheduleExtraUpdate($logEntry, array(
+                    'data' => array($oldData, $data)
+                ));
+                $ea->setOriginalObjectProperty($uow, spl_object_hash($logEntry), 'data', $data);
+            }
+            unset($this->pendingRelatedCollections[$oid]);
+        }
     }
 
     /**
@@ -180,7 +207,7 @@ class LoggableListener extends MappedEventSubscriber
      * Looks for loggable objects being inserted or updated
      * for further processing
      *
-     * @param EventArgs $args
+     * @param EventArgs $eventArgs
      * @return void
      */
     public function onFlush(EventArgs $eventArgs)
@@ -263,19 +290,26 @@ class LoggableListener extends MappedEventSubscriber
                 foreach ($config['versioned'] as $field) {
                     if ($meta->isCollectionValuedAssociation($field)) {
                         $method = 'get'.ucfirst($field);
-                        $oid = spl_object_hash($object->$method());
+                        $oid = spl_object_hash($object);
                         $collection = $object->$method();
                         $entities = array();
                         foreach ($collection as $entity) {
-                            $entities[] = array('id' => $entity->getId());
+                            if ($entity->getId()) {
+                                $entities[] = array('id' => $entity->getId());
+                            }
                         }
                         $value = $entities;
-                        if (!is_array($value) && !$value) {
-                            $this->pendingRelatedObjects[$oid][] = array(
-                                'log' => $logEntry,
-                                'field' => $field
-                            );
+
+                        if (count($value) === 0) {
+                            foreach ($collection as $entity) {
+                                $oid = spl_object_hash($entity);
+                                $this->pendingRelatedCollections[$oid][] = array(
+                                    'log'    => $logEntry,
+                                    'field'  => $field
+                                );
+                            }
                         }
+
                         $newValues[$field] = $value;
                     }
                 }
