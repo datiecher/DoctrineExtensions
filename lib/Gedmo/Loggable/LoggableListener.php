@@ -290,12 +290,14 @@ class LoggableListener extends MappedEventSubscriber
                 foreach ($config['versioned'] as $field) {
                     if ($meta->isCollectionValuedAssociation($field)) {
                         $method = 'get'.ucfirst($field);
-                        $oid = spl_object_hash($object);
-                        $collection = $object->$method();
                         $entities = array();
-                        foreach ($collection as $entity) {
-                            if ($entity->getId()) {
-                                $entities[] = array('id' => $entity->getId());
+                        if (null !== $object->$method()) {
+                            $oid = spl_object_hash($object);
+                            $collection = $object->$method();
+                            foreach ($collection as $entity) {
+                                if ($entity->getId()) {
+                                    $entities[] = array('id' => $entity->getId());
+                                }
                             }
                         }
                         $value = $entities;
@@ -304,8 +306,8 @@ class LoggableListener extends MappedEventSubscriber
                             foreach ($collection as $entity) {
                                 $oid = spl_object_hash($entity);
                                 $this->pendingRelatedCollections[$oid][] = array(
-                                    'log'    => $logEntry,
-                                    'field'  => $field
+                                    'log'   => $logEntry,
+                                    'field' => $field
                                 );
                             }
                         }
