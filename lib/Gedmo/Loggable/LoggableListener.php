@@ -297,20 +297,16 @@ class LoggableListener extends MappedEventSubscriber
                             foreach ($collection as $entity) {
                                 if ($entity->getId()) {
                                     $entities[] = array('id' => $entity->getId());
+                                } else {
+                                    $oid = spl_object_hash($entity);
+                                    $this->pendingRelatedCollections[$oid][] = array(
+                                        'log'   => $logEntry,
+                                        'field' => $field
+                                    );
                                 }
                             }
                         }
                         $value = $entities;
-
-                        if (count($value) === 0) {
-                            foreach ($collection as $entity) {
-                                $oid = spl_object_hash($entity);
-                                $this->pendingRelatedCollections[$oid][] = array(
-                                    'log'   => $logEntry,
-                                    'field' => $field
-                                );
-                            }
-                        }
 
                         $newValues[$field] = $value;
                     }
