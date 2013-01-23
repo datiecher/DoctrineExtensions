@@ -292,7 +292,6 @@ class LoggableListener extends MappedEventSubscriber
                         $method = 'get'.ucfirst($field);
                         $entities = array();
                         if (null !== $object->$method()) {
-                            $oid = spl_object_hash($object);
                             $collection = $object->$method();
                             foreach ($collection as $entity) {
                                 if ($entity->getId()) {
@@ -307,7 +306,6 @@ class LoggableListener extends MappedEventSubscriber
                             }
                         }
                         $value = $entities;
-
                         $newValues[$field] = $value;
                     }
                 }
