@@ -266,9 +266,10 @@ class LoggableListener extends MappedEventSubscriber
             $uow = $om->getUnitOfWork();
             $logEntry->setObjectId($objectId);
             $newValues = array();
+
             if ($action !== self::ACTION_REMOVE && isset($config['versioned'])) {
                 foreach ($ea->getObjectChangeSet($uow, $object) as $field => $changes) {
-                    if (!in_array($field, $config['versioned'])) {
+                    if (!array_key_exists($field, $config['versioned'])) {
                         continue;
                     }
                     $value = $changes[1];
@@ -287,12 +288,11 @@ class LoggableListener extends MappedEventSubscriber
                 }
 
                 // Persist collection associations
-                foreach ($config['versioned'] as $field) {
+                foreach ($config['versioned'] as $field => $value) {
                     if ($meta->isCollectionValuedAssociation($field)) {
-                        $method = 'get'.ucfirst($field);
                         $entities = array();
-                        if (null !== $object->$method()) {
-                            $collection = $object->$method();
+                        if (null !== $object->$value()) {
+                            $collection = $object->$value();
                             foreach ($collection as $entity) {
                                 if ($entity->getId()) {
                                     $entities[] = array('id' => $entity->getId());

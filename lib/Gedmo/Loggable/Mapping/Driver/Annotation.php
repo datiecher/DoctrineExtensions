@@ -71,8 +71,9 @@ class Annotation extends AbstractAnnotationDriver
             // versioned property
             if ($versioned = $this->reader->getPropertyAnnotation($property, self::VERSIONED)) {
                 $field = $property->getName();
+                $value = ($versioned->value) ? $versioned->value : 'get'.ucfirst($field);
                 // fields cannot be overrided and throws mapping exception
-                $config['versioned'][] = $field;
+                $config['versioned'][$field] = $value;
             }
         }
 
