@@ -1,4 +1,5 @@
 # Doctrine2 behavioral extensions
+[![Gitter](https://badges.gitter.im/Join Chat.svg)](https://gitter.im/datiecher/DoctrineExtensions?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
 ## I'm looking for maintainers of this project
 
